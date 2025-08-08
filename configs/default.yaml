@@ -1,0 +1,43 @@
+run_name: exp1
+data:
+  root: data/isot
+  language: en
+  splits: 7
+  split_ratio: [0.64, 0.16, 0.20]   # train/val/test within each split
+  seed_list: [13,17,19,23,29,31,37]
+  dedupe:
+    enabled: true
+    backend: simhash
+    threshold_bits: 3
+  smoke:
+    enabled: true
+    path: data/samples/smoke.csv
+embeddings:
+  backend: auto   # options: auto, st, hash
+  model_name: sentence-transformers/all-mpnet-base-v2
+  max_body_sentences: 80
+  weights: [0.2, 0.3, 0.5]   # title, lead, body
+features:
+  subjectivity_threshold: 0.5
+  ul_lexicons: [lexicons/profanity.txt]
+  sentiment_lexicons:
+    pos: lexicons/pos_words.txt
+    neg: lexicons/neg_words.txt
+  factcheck:
+    enabled: false
+    provider: ""
+    api_key_env: ""
+  calibration: minmax
+transition:
+  svd_tolerance: 1.0e-8
+classifier:
+  type: linear_svm       # options: linear_svm, logreg, rbf_svm
+  C: 1.0
+  gamma: 0.5            # only for rbf_svm
+evaluation:
+  metrics: [accuracy, precision, recall, f1, auc]
+  plots: [pca, mds, tsne]
+  n_jobs: 1
+repro:
+  global_seed: 42
+  deterministic: true

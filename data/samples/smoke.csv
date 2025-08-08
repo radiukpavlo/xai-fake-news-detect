@@ -1,0 +1,11 @@
+id,title,text,label
+1,"Breaking: New Cure Works","Scientists report excellent results. The treatment is effective and safe.",real
+2,"Shocking Discovery","Experts claim unbelievable benefits without evidence; this rumor spreads fast.",fake
+3,"Policy Update Announced","Officials confirm changes with detailed quotes from sources.",real
+4,"You Won't Believe This","Clickbait article uses outrageous words and little confirmation.",fake
+5,"Study Shows Improvement","Data indicates positive trends across indicators.",real
+6,"Scandal Rocks City","Unverified claims and selective quoting dominate the piece.",fake
+7,"Health Advisory","Agency warns of risk; balanced view with sources.",real
+8,"Miracle Diet Exposed","Hoax article repeats similar sentences for emphasis.",fake
+9,"Tech Launch Details","Company releases specs and references.",real
+10,"Bogus Report Goes Viral","The report is unsafe and ineffective per analysts.",fake

@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mmx-news"
+version = "0.1.0"
+description = "Reproduction of Explainable Fake News Detection via Mental-Model Approximation"
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+  {name="Reproduction Engineer", email="noreply@example.com"}
+]
+requires-python = ">=3.10"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+dependencies = []
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["mmx_news*"]

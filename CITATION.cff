@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it."
+title: "mmx-news: Reproduction of Explainable Fake News Detection via Mental-Model Approximation"
+version: "0.1.0"
+date-released: "2025-08-08"
+authors:
+  - family-names: "Reproduction Engineer"
+    given-names: "Python"
+references:
+  - type: article
+    title: "Explainable Fake News Detection with Large Language Models via Mental-Model Approximation"
+    authors:
+      - family-names: "Radiuk"
+        given-names: "Pavlo"
+      - family-names: "Barmak"
+        given-names: "Oleksander"
+      - family-names: "Krak"
+        given-names: "Iurii"
+    year: "2025"
+    journal: "MDPI (specification document)"

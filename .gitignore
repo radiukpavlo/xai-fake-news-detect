@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.venv/
+.env/
+build/
+dist/
+*.egg-info/
+runs/
+data/raw/
+data/interim/
+data/processed/
+requirements-freeze.txt
