@@ -1,8 +1,6 @@
 <div align="center">
 
-# mmx-news
-
-### Mental-Model Approximation for Explainable Fake News Detection
+# Explainable Fake News Detection with Large Language Models via Mental-Model Approximation
 
 [![Python 3.9](https://img.shields.io/badge/python-3.9-blue.svg)](https://www.python.org/downloads/release/python-3916/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -45,9 +43,9 @@ For complete accuracy using pre-trained language models:
 
 This project utilizes two fake news datasets:
 
-| Dataset | Purpose | Location | Documentation |
-|---------|---------|----------|---------------|
-| **ISOT** | Primary dataset | `data/isot/` | [Setup Instructions](docs/DATASETS.md#isot) |
+| Dataset  | Purpose                 | Location     | Documentation                               |
+|----------|-------------------------|--------------|---------------------------------------------|
+| **ISOT** | Primary dataset         | `data/isot/` | [Setup Instructions](docs/DATASETS.md#isot) |
 | **LIAR** | External generalization | `data/liar/` | [Setup Instructions](docs/DATASETS.md#liar) |
 
 > 📝 **Note:** Follow the dataset preparation instructions in `docs/DATASETS.md` to ensure proper file placement and formatting.
@@ -148,4 +146,4 @@ If you use this implementation in your research, please cite:
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License—see the [LICENSE](LICENSE) file for details.
