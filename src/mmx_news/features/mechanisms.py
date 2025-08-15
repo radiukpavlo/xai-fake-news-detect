@@ -81,7 +81,7 @@ class FeatureComputer:
         self.pos_words = set([w.strip().lower() for w in (pos_lex or []) if w.strip()])
         self.neg_words = set([w.strip().lower() for w in (neg_lex or []) if w.strip()])
         self.ul_words: set[str] = set()
-        for p in (ul_lexicons or []):
+        for p in ul_lexicons or []:
             try:
                 for line in Path(p).read_text(encoding="utf-8").splitlines():
                     w = line.strip().lower()
@@ -109,10 +109,12 @@ class FeatureComputer:
                 sim = float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-12))
                 sims.append(sim)
         val = float(np.mean(sims)) if sims else 0.0
-        return FeatureResult("PR", self._clip01(val), Evidence([], "pairwise cosine mean", []), {"pairs": str(len(sims))})
+        return FeatureResult(
+            "PR", self._clip01(val), Evidence([], "pairwise cosine mean", []), {"pairs": str(len(sims))}
+        )
 
     def subjectivity_ratio(self, text: str, threshold: float = 0.5) -> FeatureResult:
-        toks = [t.strip(".,!?;:'"()[]{}").lower() for t in text.split()]
+        toks = [t.strip(""".,!?;:'"()[]{}""").lower() for t in text.split()]
         # heuristic: adjectives/adverbs approximated by suffix patterns; plus sentiment words
         subj = 0
         for t in toks:
@@ -126,7 +128,7 @@ class FeatureComputer:
         count = 0
         start = 0
         for tok in text.split():
-            tok_clean = tok.strip(".,!?;:'"()[]{}").lower()
+            tok_clean = tok.strip(""".,!?;:'"()[]{}""").lower()
             end = start + len(tok)
             if tok_clean in self.pos_words or tok_clean in self.neg_words or tok_clean.endswith(("ly", "ive", "ous")):
                 spans.append((start, end))
@@ -134,7 +136,9 @@ class FeatureComputer:
                 if count >= 30:
                     break
             start = end + 1  # account for space
-        return FeatureResult("SR", self._clip01(value), Evidence(spans, "lexicon+suffix heuristic", []), {"threshold": str(threshold)})
+        return FeatureResult(
+            "SR", self._clip01(value), Evidence(spans, "lexicon+suffix heuristic", []), {"threshold": str(threshold)}
+        )
 
     def headline_lead_coherence(self, title: str, lead: str) -> FeatureResult:
         embs = self.emb.encode([title, lead])
@@ -143,18 +147,23 @@ class FeatureComputer:
         return FeatureResult("HS", self._clip01(sim), Evidence([], "cosine(title, lead)", []), {})
 
     def unusual_language_share(self, text: str) -> FeatureResult:
-        toks = [t.strip(".,!?;:'"()[]{}").lower() for t in text.split() if t.strip()]
+        toks = [t.strip(""".,!?;:'"()[]{}""").lower() for t in text.split() if t.strip()]
         cnt = sum(1 for t in toks if t in self.ul_words)
         value = float(cnt / max(1, len(toks)))
         spans: List[Tuple[int, int]] = []
         start = 0
         for tok in text.split():
-            clean = tok.strip(".,!?;:'"()[]{}").lower()
+            clean = tok.strip(""".,!?;:'"()[]{}""").lower()
             end = start + len(tok)
             if clean in self.ul_words:
                 spans.append((start, end))
             start = end + 1
-        return FeatureResult("UL", self._clip01(value), Evidence(spans[:30], "lexicon match", []), {"lexicon_size": str(len(self.ul_words))})
+        return FeatureResult(
+            "UL",
+            self._clip01(value),
+            Evidence(spans[:30], "lexicon match", []),
+            {"lexicon_size": str(len(self.ul_words))},
+        )
 
     def sentiment_and_consistency(self, text: str) -> Tuple[FeatureResult, FeatureResult]:
         sents = simple_sentence_split(text)
@@ -165,7 +174,7 @@ class FeatureComputer:
             )
         scores: List[float] = []
         for s in sents:
-            toks = [t.strip(".,!?;:'"()[]{}").lower() for t in s.split() if t.strip()]
+            toks = [t.strip(""".,!?;:'"()[]{}""").lower() for t in s.split() if t.strip()]
             pos = sum(1 for t in toks if t in self.pos_words)
             neg = sum(1 for t in toks if t in self.neg_words)
             score = (pos - neg) / max(1, (pos + neg))
@@ -176,15 +185,17 @@ class FeatureComputer:
         var = float(np.var(scores))
         nc = float(1.0 - var)  # higher variance -> lower consistency
         return (
-            FeatureResult("SP", self._clip01(sp), Evidence([], "lexicon polarity mean", []), {"n_sents": str(len(sents))}),
+            FeatureResult(
+                "SP", self._clip01(sp), Evidence([], "lexicon polarity mean", []), {"n_sents": str(len(sents))}
+            ),
             FeatureResult("NC", self._clip01(nc), Evidence([], "1 - var(sentiment)", []), {}),
         )
 
     def selective_quoting(self, text: str) -> FeatureResult:
         # count quoted spans
-        n_quotes = text.count('"') // 2 + text.count('“') // 2 + text.count('”') // 2
+        n_quotes = text.count('"') // 2 + text.count("“") // 2 + text.count("”") // 2
         toks = [t for t in text.split() if t.strip()]
-        quote_tokens = sum(1 for t in toks if t.startswith('"') or t.endswith('"') or '“' in t or '”' in t)
+        quote_tokens = sum(1 for t in toks if t.startswith('"') or t.endswith('"') or "“" in t or "”" in t)
         imbalance = quote_tokens / max(1, len(toks))
         # combine with weights (alpha=0.7, beta=0.3) and normalize by simple Z=1.0
         value = 0.7 * imbalance + 0.3 * (1.0 - math.exp(-n_quotes))

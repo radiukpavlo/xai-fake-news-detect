@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import itertools
 from pathlib import Path
-from typing import Dict, List
 
 from ..training.train import run_training
 from ..training.utils import load_config

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import numpy as np
-from sklearn import svm, linear_model
+from sklearn import linear_model, svm
 
 
 def make_classifier(kind: str = "linear_svm", C: float = 1.0, gamma: float = 0.5):

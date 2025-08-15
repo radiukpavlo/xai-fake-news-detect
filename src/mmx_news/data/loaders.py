@@ -11,7 +11,6 @@ import pandas as pd
 from sklearn.model_selection import StratifiedShuffleSplit
 
 from ..utils.constants import LABEL_MAP
-from ..utils.io import dump_json
 from .preprocess import simple_sentence_split
 
 
@@ -137,9 +136,9 @@ def stratified_splits(
                 out.extend(groups[int(gi)])
             return np.array(out, dtype=int)
 
-        train_idx = flatten(group_ids[train_groups_idx])
-        val_idx = flatten(group_ids[val_groups_idx])
-        test_idx = flatten(group_ids[test_groups_idx])
+        train_idx = flatten(trainval_groups_idx[train_groups_idx])
+        val_idx = flatten(trainval_groups_idx[val_groups_idx])
+        test_idx = flatten(test_groups_idx)
 
         results[seed] = {"train_idx": train_idx, "val_idx": val_idx, "test_idx": test_idx}
     return results
@@ -168,6 +167,7 @@ def prepare_splits(cfg: Dict, mode: str = "full") -> None:
 
     # Stats per split
     import pandas as pd
+
     rows = []
     for seed, idx in splits.items():
         for split_name in ["train_idx", "val_idx", "test_idx"]:

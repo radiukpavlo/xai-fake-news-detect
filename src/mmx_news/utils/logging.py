@@ -22,7 +22,18 @@ def runtime_fingerprint() -> Dict[str, Any]:
     except Exception:
         md = None
     if md is not None:
-        pkgs = ["numpy", "pandas", "scikit-learn", "scipy", "matplotlib", "sentence-transformers", "torch", "tqdm", "umap-learn", "pyyaml"]
+        pkgs = [
+            "numpy",
+            "pandas",
+            "scikit-learn",
+            "scipy",
+            "matplotlib",
+            "sentence-transformers",
+            "torch",
+            "tqdm",
+            "umap-learn",
+            "pyyaml",
+        ]
         versions = {}
         for p in pkgs:
             try:
