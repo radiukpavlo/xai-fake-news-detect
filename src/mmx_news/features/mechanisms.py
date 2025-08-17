@@ -201,3 +201,29 @@ class FeatureComputer:
         value = 0.7 * imbalance + 0.3 * (1.0 - math.exp(-n_quotes))
         value = self._clip01(value)
         return FeatureResult("SQ", value, Evidence([], "quote share + count", []), {"n_quotes": str(n_quotes)})
+
+    def fact_confirmation(self, text: str) -> FeatureResult:
+        """Placeholder for fact confirmation.
+
+        Checks for keywords suggesting external sourcing.
+        A real implementation would use a fact-checking API.
+        """
+        keywords = ["source:", "according to", "reuters", "associated press", "ap", "fact check"]
+        lower_text = text.lower()
+        count = sum(1 for keyword in keywords if keyword in lower_text)
+
+        # Normalize based on presence of any keyword
+        value = 1.0 if count > 0 else 0.0
+
+        spans: List[Tuple[int, int]] = []
+        for keyword in keywords:
+            idx = lower_text.find(keyword)
+            if idx != -1:
+                spans.append((idx, idx + len(keyword)))
+
+        return FeatureResult(
+            "FC",
+            value,
+            Evidence(spans[:10], "keyword match", []),
+            {"keywords_checked": str(len(keywords)), "hits": str(count)},
+        )

@@ -6,6 +6,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 
 from ..data.loaders import Article, _read_isot, _read_smoke, stratified_splits
+from ..data.download import check_or_raise_dataset
 
 
 from ..features.mechanisms import EmbeddingBackend, FeatureComputer
@@ -65,19 +66,28 @@ def _build_features(arts: List[Article], cfg: Config) -> Tuple[np.ndarray, List[
         sq = fc.selective_quoting(a.text)
 
         raw_values = [pr.value, sr.value, hs.value, ul.value, sp.value, nc.value, sq.value]
+        feature_evidence = [
+            {"name": pr.name, "value": pr.value, "evidence": pr.evidence.__dict__, "meta": pr.meta},
+            {"name": sr.name, "value": sr.value, "evidence": sr.evidence.__dict__, "meta": sr.meta},
+            {"name": hs.name, "value": hs.value, "evidence": hs.evidence.__dict__, "meta": hs.meta},
+            {"name": ul.name, "value": ul.value, "evidence": ul.evidence.__dict__, "meta": ul.meta},
+            {"name": sp.name, "value": sp.value, "evidence": sp.evidence.__dict__, "meta": sp.meta},
+            {"name": nc.name, "value": nc.value, "evidence": nc.evidence.__dict__, "meta": nc.meta},
+            {"name": sq.name, "value": sq.value, "evidence": sq.evidence.__dict__, "meta": sq.meta},
+        ]
+
+        if cfg.features.factcheck.enabled:
+            fc_feat = fc.fact_confirmation(a.text)
+            raw_values.append(fc_feat.value)
+            feature_evidence.append(
+                {"name": fc_feat.name, "value": fc_feat.value, "evidence": fc_feat.evidence.__dict__, "meta": fc_feat.meta}
+            )
+
         feats.append(raw_values)
         evidences.append(
             {
                 "id": a.id,
-                "features": [
-                    {"name": pr.name, "value": pr.value, "evidence": pr.evidence.__dict__, "meta": pr.meta},
-                    {"name": sr.name, "value": sr.value, "evidence": sr.evidence.__dict__, "meta": sr.meta},
-                    {"name": hs.name, "value": hs.value, "evidence": hs.evidence.__dict__, "meta": hs.meta},
-                    {"name": ul.name, "value": ul.value, "evidence": ul.evidence.__dict__, "meta": ul.meta},
-                    {"name": sp.name, "value": sp.value, "evidence": sp.evidence.__dict__, "meta": sp.meta},
-                    {"name": nc.name, "value": nc.value, "evidence": nc.evidence.__dict__, "meta": nc.meta},
-                    {"name": sq.name, "value": sq.value, "evidence": sq.evidence.__dict__, "meta": sq.meta},
-                ],
+                "features": feature_evidence,
             }
         )
     return np.asarray(feats, dtype=np.float32), evidences
@@ -154,20 +164,25 @@ def evaluate_model(
     # Evaluate on validation using projected features (fidelity) and B
     y_pred_val = clf.predict(B_val_scaled)
     report_val = classification_report(y_val, y_pred_val, digits=4, zero_division=0, target_names=["fake", "real"])
+    auc_val = float("nan")
     if hasattr(clf, "decision_function"):
-        scores_val = clf.decision_function(B_val_scaled)
-        auc_val = float(roc_auc_score(y_val, scores_val))
-    else:
-        auc_val = float("nan")
+        try:
+            scores_val = clf.decision_function(B_val_scaled)
+            auc_val = float(roc_auc_score(y_val, scores_val))
+        except ValueError:
+            pass  # Only one class present in y_true. ROC AUC score is not defined in that case.
 
     # Evaluate on test
     y_pred_test = clf.predict(B_test_scaled)
     report_test = classification_report(y_test, y_pred_test, digits=4, zero_division=0, target_names=["fake", "real"])
+
+    auc_test = float("nan")
     if hasattr(clf, "decision_function"):
-        scores_test = clf.decision_function(B_test_scaled)
-        auc_test = float(roc_auc_score(y_test, scores_test))
-    else:
-        auc_test = float("nan")
+        try:
+            scores_test = clf.decision_function(B_test_scaled)
+            auc_test = float(roc_auc_score(y_test, scores_test))
+        except ValueError:
+            pass
 
     return report_val, report_test, auc_val, auc_test
 
@@ -252,6 +267,7 @@ def prepare_data(cfg: Config, mode: str) -> Tuple[List[Article], np.ndarray, Dic
         articles = _read_smoke(p)
     else:
         root = Path(cfg.data.root)
+        check_or_raise_dataset(root)  # Ensure data is present
         articles = _read_isot(root)
 
     y = np.array([a.label for a in articles], dtype=int)
