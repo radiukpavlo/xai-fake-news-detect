@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 import zipfile
+from pathlib import Path
 
 
 def build_zip(out_path: str | Path = "mmx_news_repro.zip") -> None:

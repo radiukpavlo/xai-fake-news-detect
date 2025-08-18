@@ -24,8 +24,8 @@ features:
     pos: lexicons/pos_words.txt
     neg: lexicons/neg_words.txt
   factcheck:
-    enabled: false
-    provider: ""
+    enabled: true
+    provider: "keyword_placeholder"
     api_key_env: ""
   calibration: minmax
 transition:

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import argparse
 
-from mmx_news.training.utils import load_config
 from mmx_news.data.loaders import prepare_splits
+from mmx_news.training.utils import load_config
 
 
 def main() -> None:

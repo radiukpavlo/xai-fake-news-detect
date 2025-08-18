@@ -10,8 +10,8 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedShuffleSplit
 
+from ..utils.config import Config
 from ..utils.constants import LABEL_MAP
-from ..utils.io import dump_json
 from .preprocess import simple_sentence_split
 
 
@@ -137,30 +137,30 @@ def stratified_splits(
                 out.extend(groups[int(gi)])
             return np.array(out, dtype=int)
 
-        train_idx = flatten(group_ids[train_groups_idx])
-        val_idx = flatten(group_ids[val_groups_idx])
-        test_idx = flatten(group_ids[test_groups_idx])
+        train_idx = flatten(trainval_groups_idx[train_groups_idx])
+        val_idx = flatten(trainval_groups_idx[val_groups_idx])
+        test_idx = flatten(test_groups_idx)
 
         results[seed] = {"train_idx": train_idx, "val_idx": val_idx, "test_idx": test_idx}
     return results
 
 
-def prepare_splits(cfg: Dict, mode: str = "full") -> None:
+def prepare_splits(cfg: Config, mode: str = "full") -> None:
     """Prepare splits and dataset statistics, saving to data/processed."""
     if mode == "smoke":
-        arts = _read_smoke(Path(cfg["data"]["smoke"]["path"]))
+        arts = _read_smoke(Path(cfg.data.smoke.path))
     else:
-        arts = _read_isot(Path(cfg["data"]["root"]))
+        arts = _read_isot(Path(cfg.data.root))
     out_dir = Path("data/processed")
     (out_dir / "splits").mkdir(parents=True, exist_ok=True)
 
     splits = stratified_splits(
         arts,
-        n_splits=int(cfg["data"]["splits"]),
-        split_ratio=tuple(cfg["data"]["split_ratio"]),
-        seed_list=list(cfg["data"]["seed_list"]),
-        dedupe_enabled=bool(cfg["data"]["dedupe"]["enabled"]),
-        dedupe_threshold_bits=int(cfg["data"]["dedupe"]["threshold_bits"]),
+        n_splits=int(cfg.data.splits),
+        split_ratio=tuple(cfg.data.split_ratio),
+        seed_list=list(cfg.data.seed_list),
+        dedupe_enabled=bool(cfg.data.dedupe.enabled),
+        dedupe_threshold_bits=int(cfg.data.dedupe.threshold_bits),
     )
     # Save per-seed splits as .npz
     for seed, idx in splits.items():
@@ -168,6 +168,7 @@ def prepare_splits(cfg: Dict, mode: str = "full") -> None:
 
     # Stats per split
     import pandas as pd
+
     rows = []
     for seed, idx in splits.items():
         for split_name in ["train_idx", "val_idx", "test_idx"]:

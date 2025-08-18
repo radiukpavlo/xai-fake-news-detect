@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+
 from mmx_news.evaluation.metrics import binary_metrics
 from mmx_news.models.transition import fit_transition
 

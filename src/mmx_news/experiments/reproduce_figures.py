@@ -5,7 +5,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.decomposition import PCA
-from sklearn.manifold import MDS, TSNE
 
 
 def make_plots(run_dir: str | Path) -> None:

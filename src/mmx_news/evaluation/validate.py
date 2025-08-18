@@ -26,7 +26,13 @@ def evaluate_checkpoint(checkpoint: str | Path, split: str = "test") -> Dict[str
     y_pred = clf.predict(X)
     scores = clf.decision_function(X) if hasattr(clf, "decision_function") else None
     m = binary_metrics(y_true, y_pred, scores=scores)
-    result = {"accuracy": m.accuracy, "precision": m.precision, "recall": m.recall, "f1": m.f1, "auc": (m.auc if isinstance(m.auc, float) else float('nan'))}
+    result = {
+        "accuracy": m.accuracy,
+        "precision": m.precision,
+        "recall": m.recall,
+        "f1": m.f1,
+        "auc": (m.auc if isinstance(m.auc, float) else float("nan")),
+    }
     with open(root / f"eval_{split}.json", "w", encoding="utf-8") as f:
         json.dump(result, f, indent=2)
     return result

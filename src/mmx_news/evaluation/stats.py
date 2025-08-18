@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, Iterable, List, Tuple
+from typing import Iterable, List, Tuple
 
 import numpy as np
 from scipy.stats import ttest_rel
