@@ -12,3 +12,5 @@ data/raw/
 data/interim/
 data/processed/
 requirements-freeze.txt
+/data/
+cache/

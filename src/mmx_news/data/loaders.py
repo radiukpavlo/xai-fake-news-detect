@@ -77,18 +77,56 @@ def hamming(a: int, b: int) -> int:
 def group_near_duplicates(arts: List[Article], threshold_bits: int = 3) -> List[List[int]]:
     """Group near-duplicates via SimHash Hamming distance ≤ threshold."""
     sigs = [simhash(a.text) for a in arts]
+
+    # Bucketing strategy to find candidate pairs
+    num_bands = 8
+    band_size = 8
+
+    buckets = [{} for _ in range(num_bands)]
+
+    for i, sig in enumerate(sigs):
+        for j in range(num_bands):
+            band = (sig >> (j * band_size)) & ((1 << band_size) - 1)
+            if band not in buckets[j]:
+                buckets[j][band] = []
+            buckets[j][band].append(i)
+
+    candidate_pairs = set()
+    for j in range(num_bands):
+        for band in buckets[j]:
+            bucket = buckets[j][band]
+            if len(bucket) > 1:
+                for i1 in range(len(bucket)):
+                    for i2 in range(i1 + 1, len(bucket)):
+                        u, v = bucket[i1], bucket[i2]
+                        if u > v:
+                            u, v = v, u
+                        candidate_pairs.add((u, v))
+
+    # Build graph from candidate pairs
+    adj = [[] for _ in range(len(arts))]
+    for u, v in candidate_pairs:
+        if hamming(sigs[u], sigs[v]) <= threshold_bits:
+            adj[u].append(v)
+            adj[v].append(u)
+
+    # Find connected components (groups)
     groups: List[List[int]] = []
-    used = [False] * len(arts)
+    visited = [False] * len(arts)
     for i in range(len(arts)):
-        if used[i]:
-            continue
-        group = [i]
-        used[i] = True
-        for j in range(i + 1, len(arts)):
-            if not used[j] and hamming(sigs[i], sigs[j]) <= threshold_bits:
-                group.append(j)
-                used[j] = True
-        groups.append(group)
+        if not visited[i]:
+            group = []
+            q = [i]
+            visited[i] = True
+            while q:
+                u = q.pop(0)
+                group.append(u)
+                for v in adj[u]:
+                    if not visited[v]:
+                        visited[v] = True
+                        q.append(v)
+            groups.append(group)
+
     return groups
 
 

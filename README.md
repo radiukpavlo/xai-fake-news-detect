@@ -116,6 +116,52 @@ python -m mmx_news.cli baselines --config configs/default.yaml
 
 > 📚 For detailed experiment orchestration, see [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md) and [`docs/RESULTS_MAP.md`](docs/RESULTS_MAP.md)
 
+## 🚀 Running the Optimized Pipeline
+
+This project has been enhanced with several optimizations to make the experimental pipeline more efficient for local execution.
+
+### Overview of Optimizations
+
+*   **Efficient Deduplication:** The near-duplicate detection algorithm has been optimized to run much faster on large datasets.
+*   **Caching:** Intermediate results like processed data, embeddings, and features are now cached to disk. This significantly speeds up repeated runs of the pipeline, as expensive computations are not repeated. The cache is stored in the `cache/` directory.
+*   **Configurable Models:** You can now easily switch between a high-performance "production" model and a smaller, faster "development" model. This is useful for quick tests and debugging.
+*   **Parallelization:** The feature extraction process has been parallelized to take advantage of multi-core machines, leading to significant speedups.
+
+### Configuration
+
+The optimizations can be configured in the `configs/default.yaml` file:
+
+*   **Deduplication:** You can enable or disable deduplication by setting `data.dedupe.enabled` to `true` or `false`. It is recommended to keep it enabled to get the best results.
+*   **Embedding Models:** You can switch between the production and development models by setting `embeddings.mode` to `prod` or `dev`.
+*   **Parallelization:** You can control the number of parallel jobs for feature extraction by setting `evaluation.n_jobs`. A value of `-1` will use all available CPU cores.
+
+### Running the Pipeline
+
+Here's how to run the optimized pipeline:
+
+**1. Quick Test (Smoke Mode)**
+
+To run a quick end-to-end test of the pipeline on a small sample of the data, use the `--mode smoke` flag with the `train` command:
+
+```bash
+python -m mmx_news.cli train --config configs/default.yaml --mode smoke
+```
+
+This will run the entire pipeline, including data preparation, training, and evaluation, on the `smoke.csv` dataset. This is a great way to verify that your environment is set up correctly.
+
+**2. Full Run**
+
+To run the full pipeline on the ISOT dataset, use the `train` command without the `--mode` flag:
+
+```bash
+# Make sure you have downloaded the ISOT dataset and placed it in data/isot/
+python -m mmx_news.cli train --config configs/default.yaml --seed 13
+```
+
+This will run the full pipeline with the configuration specified in `configs/default.yaml`. The first run will be slow as it needs to compute and cache all the intermediate results. Subsequent runs will be much faster.
+
+You can also run the other experiments (baselines and ablations) as described in the "Experimental Commands" section. These will also benefit from the caching and other optimizations.
+
 ## 📁 Project Structure
 
 ```

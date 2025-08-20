@@ -4,12 +4,16 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 import numpy as np
+from joblib import Memory, Parallel, delayed
 
 from ..data.loaders import Article, _read_isot, _read_smoke, stratified_splits
 from ..data.download import check_or_raise_dataset
 
 
 from ..features.mechanisms import EmbeddingBackend, FeatureComputer
+
+cachedir = './cache'
+memory = Memory(cachedir, verbose=0)
 
 
 def _segment_lead(text: str, max_sent: int) -> Tuple[str, List[str]]:
@@ -25,7 +29,7 @@ def _build_embeddings(arts: List[Article], cfg: Config) -> np.ndarray:
     max_body_sent = cfg.embeddings.max_body_sentences
     w_title, w_lead, w_body = cfg.embeddings.weights
     backend = cfg.embeddings.backend
-    model_name = cfg.embeddings.model_name
+    model_name = cfg.embeddings.model_name if cfg.embeddings.mode == "prod" else cfg.embeddings.dev_model_name
     emb = EmbeddingBackend(backend=backend, model_name=model_name)
 
     embs = []
@@ -47,49 +51,54 @@ def _load_lexicon(path: str | Path) -> List[str]:
         return []
 
 
+def _compute_features_for_article(a: Article, fc: FeatureComputer, cfg: Config) -> Tuple[List[float], Dict]:
+    lead, _ = _segment_lead(a.text, cfg.embeddings.max_body_sentences)
+    pr = fc.paraphrasing_ratio(a.text)
+    sr = fc.subjectivity_ratio(a.text, threshold=cfg.features.subjectivity_threshold)
+    hs = fc.headline_lead_coherence(a.title, lead)
+    ul = fc.unusual_language_share(a.text)
+    sp, nc = fc.sentiment_and_consistency(a.text)
+    sq = fc.selective_quoting(a.text)
+
+    raw_values = [pr.value, sr.value, hs.value, ul.value, sp.value, nc.value, sq.value]
+    feature_evidence = [
+        {"name": pr.name, "value": pr.value, "evidence": pr.evidence.__dict__, "meta": pr.meta},
+        {"name": sr.name, "value": sr.value, "evidence": sr.evidence.__dict__, "meta": sr.meta},
+        {"name": hs.name, "value": hs.value, "evidence": hs.evidence.__dict__, "meta": hs.meta},
+        {"name": ul.name, "value": ul.value, "evidence": ul.evidence.__dict__, "meta": ul.meta},
+        {"name": sp.name, "value": sp.value, "evidence": sp.evidence.__dict__, "meta": sp.meta},
+        {"name": nc.name, "value": nc.value, "evidence": nc.evidence.__dict__, "meta": nc.meta},
+        {"name": sq.name, "value": sq.value, "evidence": sq.evidence.__dict__, "meta": sq.meta},
+    ]
+
+    if cfg.features.factcheck.enabled:
+        fc_feat = fc.fact_confirmation(a.text)
+        raw_values.append(fc_feat.value)
+        feature_evidence.append(
+            {"name": fc_feat.name, "value": fc_feat.value, "evidence": fc_feat.evidence.__dict__, "meta": fc_feat.meta}
+        )
+
+    evidence = {
+        "id": a.id,
+        "features": feature_evidence,
+    }
+
+    return raw_values, evidence
+
+
 def _build_features(arts: List[Article], cfg: Config) -> Tuple[np.ndarray, List[Dict]]:
     pos_lex = _load_lexicon(cfg.features.sentiment_lexicons.pos)
     neg_lex = _load_lexicon(cfg.features.sentiment_lexicons.neg)
     ul_paths = [Path(p) for p in cfg.features.ul_lexicons]
-    emb = EmbeddingBackend(backend=cfg.embeddings.backend, model_name=cfg.embeddings.model_name)
+    model_name = cfg.embeddings.model_name if cfg.embeddings.mode == "prod" else cfg.embeddings.dev_model_name
+    emb = EmbeddingBackend(backend=cfg.embeddings.backend, model_name=model_name)
     fc = FeatureComputer(emb_backend=emb, pos_lex=pos_lex, neg_lex=neg_lex, ul_lexicons=ul_paths)
 
-    feats: List[List[float]] = []
-    evidences: List[Dict] = []
-    for a in arts:
-        lead, _ = _segment_lead(a.text, cfg.embeddings.max_body_sentences)
-        pr = fc.paraphrasing_ratio(a.text)
-        sr = fc.subjectivity_ratio(a.text, threshold=cfg.features.subjectivity_threshold)
-        hs = fc.headline_lead_coherence(a.title, lead)
-        ul = fc.unusual_language_share(a.text)
-        sp, nc = fc.sentiment_and_consistency(a.text)
-        sq = fc.selective_quoting(a.text)
+    results = Parallel(n_jobs=cfg.evaluation.n_jobs)(delayed(_compute_features_for_article)(a, fc, cfg) for a in arts)
 
-        raw_values = [pr.value, sr.value, hs.value, ul.value, sp.value, nc.value, sq.value]
-        feature_evidence = [
-            {"name": pr.name, "value": pr.value, "evidence": pr.evidence.__dict__, "meta": pr.meta},
-            {"name": sr.name, "value": sr.value, "evidence": sr.evidence.__dict__, "meta": sr.meta},
-            {"name": hs.name, "value": hs.value, "evidence": hs.evidence.__dict__, "meta": hs.meta},
-            {"name": ul.name, "value": ul.value, "evidence": ul.evidence.__dict__, "meta": ul.meta},
-            {"name": sp.name, "value": sp.value, "evidence": sp.evidence.__dict__, "meta": sp.meta},
-            {"name": nc.name, "value": nc.value, "evidence": nc.evidence.__dict__, "meta": nc.meta},
-            {"name": sq.name, "value": sq.value, "evidence": sq.evidence.__dict__, "meta": sq.meta},
-        ]
+    feats = [res[0] for res in results]
+    evidences = [res[1] for res in results]
 
-        if cfg.features.factcheck.enabled:
-            fc_feat = fc.fact_confirmation(a.text)
-            raw_values.append(fc_feat.value)
-            feature_evidence.append(
-                {"name": fc_feat.name, "value": fc_feat.value, "evidence": fc_feat.evidence.__dict__, "meta": fc_feat.meta}
-            )
-
-        feats.append(raw_values)
-        evidences.append(
-            {
-                "id": a.id,
-                "features": feature_evidence,
-            }
-        )
     return np.asarray(feats, dtype=np.float32), evidences
 
 
@@ -109,6 +118,7 @@ def _minmax_apply(X: np.ndarray, lo: np.ndarray, width: np.ndarray) -> np.ndarra
     return (X - lo) / width
 
 
+@memory.cache
 def build_features_and_embeddings(
     articles: List[Article], cfg: Config
 ) -> Tuple[np.ndarray, np.ndarray, List[Dict]]:
@@ -260,6 +270,7 @@ def save_artifacts(
 from ..utils.config import Config
 
 
+@memory.cache
 def prepare_data(cfg: Config, mode: str) -> Tuple[List[Article], np.ndarray, Dict[str, np.ndarray]]:
     """Loads articles and creates splits."""
     if mode == "smoke":
