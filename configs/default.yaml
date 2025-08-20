@@ -14,7 +14,9 @@ data:
     path: data/samples/smoke.csv
 embeddings:
   backend: auto   # options: auto, st, hash
+  mode: prod # options: prod, dev
   model_name: sentence-transformers/all-mpnet-base-v2
+  dev_model_name: sentence-transformers/all-MiniLM-L6-v2
   max_body_sentences: 80
   weights: [0.2, 0.3, 0.5]   # title, lead, body
 features:
