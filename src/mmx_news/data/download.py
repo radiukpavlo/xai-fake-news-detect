@@ -4,43 +4,33 @@ import os
 import zipfile
 from pathlib import Path
 
+def _download_dataset(dataset: str, root: str | Path, expected_files: list[str]) -> None:
+    """
+    Downloads and unzips a dataset from Kaggle if it doesn't already exist.
 
-def download_isot_dataset(root: str | Path) -> None:
-    """Check if ISOT dataset files exist, otherwise download from Kaggle."""
+    Args:
+        dataset: The Kaggle dataset identifier (e.g., "user/dataset-name").
+        root: The directory to download and extract the dataset to.
+        expected_files: A list of filenames to check for to determine if the
+                        dataset already exists.
+    """
     root = Path(root)
-    fake_csv = root / "Fake.csv"
-    true_csv = root / "True.csv"
-
-    if fake_csv.exists() and true_csv.exists():
-        print("ISOT dataset already exists. Skipping download.")
+    if all((root / f).exists() for f in expected_files):
+        print(f"{dataset.split('/')[1]} dataset already exists. Skipping download.")
         return
 
-    print("ISOT dataset not found. Attempting to download from Kaggle...")
-
-    dataset = "clmentbisaillon/fake-and-real-news-dataset"
-    zip_path = root / f"{dataset.split('/')[1]}.zip"
-
+    print(f"{dataset.split('/')[1]} dataset not found. Attempting to download from Kaggle...")
     root.mkdir(parents=True, exist_ok=True)
 
-    # Note: Requires kaggle API to be configured on the system.
-    # (i.e., `~/.kaggle/kaggle.json` should exist)
     try:
-        print(f"Downloading dataset '{dataset}' to '{zip_path}'...")
-        # Using os.system to run the shell command
+        print(f"Downloading dataset '{dataset}' to '{root}'...")
         exit_code = os.system(f"kaggle datasets download -d {dataset} -p '{root}' --unzip")
         if exit_code != 0:
             raise OSError(f"Kaggle CLI command failed with exit code {exit_code}.")
 
-        # The kaggle tool has an --unzip flag, but if it fails or for older versions,
-        # we can handle unzipping manually. Let's assume --unzip works.
-        # If the files are not there after unzip, something is wrong.
-        if not fake_csv.exists() or not true_csv.exists():
-             # Fallback to manual unzip if --unzip didn't work as expected
-            for item in os.listdir(root):
-                if item.endswith(".zip"):
-                    zip_path = root / item
-                    break
-
+        # Fallback to manual unzip if --unzip didn't work as expected
+        if not all((root / f).exists() for f in expected_files):
+            zip_path = root / f"{dataset.split('/')[1]}.zip"
             if zip_path.exists():
                 print(f"Unzipping '{zip_path}'...")
                 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
@@ -49,9 +39,9 @@ def download_isot_dataset(root: str | Path) -> None:
             else:
                 raise FileNotFoundError("Downloaded zip file not found for unzipping.")
 
-        if not fake_csv.exists() or not true_csv.exists():
+        if not all((root / f).exists() for f in expected_files):
             raise FileNotFoundError(
-                f"Successfully downloaded but 'Fake.csv' or 'True.csv' not found in the archive at {root}."
+                f"Successfully downloaded but expected files not found in the archive at {root}."
             )
 
         print("Dataset downloaded and verified successfully.")
@@ -64,6 +54,23 @@ def download_isot_dataset(root: str | Path) -> None:
         print("3. Place the downloaded 'kaggle.json' in the '~/.kaggle/' directory.")
         raise
 
-def check_or_raise_dataset(root: str | Path) -> None:
+def download_isot_dataset(root: str | Path) -> None:
+    """Check if ISOT dataset files exist, otherwise download from Kaggle."""
+    _download_dataset(
+        dataset="csmalarkodi/isot-fake-news-dataset",
+        root=root,
+        expected_files=["Fake.csv", "True.csv"],
+    )
+
+def download_liar_dataset(root: str | Path) -> None:
+    """Check if LIAR dataset files exist, otherwise download from Kaggle."""
+    _download_dataset(
+        dataset="doanquanvietnamca/liar-dataset",
+        root=root,
+        expected_files=["train.tsv", "test.tsv", "valid.tsv"],
+    )
+
+def check_or_raise_dataset(isot_root: str | Path, liar_root: str | Path) -> None:
     """Verify dataset files exist; if not, download them."""
-    download_isot_dataset(root)
+    download_isot_dataset(isot_root)
+    download_liar_dataset(liar_root)
