@@ -41,14 +41,49 @@ For complete accuracy using pre-trained language models:
 
 ## 📊 Datasets
 
-This project utilizes two fake news datasets:
+### Enhanced Dataset Pipeline 🚀
 
-| Dataset  | Purpose                 | Location     | Documentation                               |
-|----------|-------------------------|--------------|---------------------------------------------|
-| **ISOT** | Primary dataset         | `data/isot/` | [Setup Instructions](docs/DATASETS.md#isot) |
-| **LIAR** | External generalization | `data/liar/` | [Setup Instructions](docs/DATASETS.md#liar) |
+This project now includes a comprehensive dataset pipeline that can automatically download and process fake news datasets from multiple sources:
 
-> 📝 **Note:** Follow the dataset preparation instructions in `docs/DATASETS.md` to ensure proper file placement and formatting.
+**Supported Sources:**
+- 📦 **Kaggle** - ISOT, LIAR, COVID-19 Fake News, and more
+- 📚 **Mendeley Data** - Academic fake news datasets
+- 🤗 **Hugging Face** - FEVER, Multi-FC datasets
+- 🌐 **Direct URLs** - Any CSV/JSON dataset
+- 💻 **GitHub** - FakeNewsNet, BuzzFeed datasets
+
+### Quick Start with Dataset Pipeline
+
+```bash
+# List all available datasets
+python -m mmx_news.cli dataset list-datasets
+
+# Download single dataset with API key
+python -m mmx_news.cli dataset download isot --kaggle-key "username:api_key"
+
+# Download multiple datasets and combine
+python -m mmx_news.cli dataset download-multiple \
+    --datasets "isot,liar,covid19_fake" \
+    --kaggle-key "username:api_key" \
+    --combine --balance
+
+# Integrate into main pipeline and train
+python -m mmx_news.cli dataset integrate --prepare
+python -m mmx_news.cli train --config configs/default.yaml --seed 13
+```
+
+### Available Datasets
+
+| Dataset  | Source | Samples | Description |
+|----------|--------|---------|-------------|
+| **ISOT** | Kaggle | 44,898 | Primary dataset with news articles |
+| **LIAR** | Kaggle | 12,800 | Short statements from PolitiFact |
+| **COVID-19** | Kaggle | ~10,000 | COVID-related misinformation |
+| **FakeNewsNet** | GitHub | ~23,000 | Multi-domain with social context |
+| **FEVER** | HuggingFace | 185,445 | Fact extraction and verification |
+| **Custom** | Any | - | Support for custom datasets |
+
+> 📝 **Full Documentation:** See [Dataset Pipeline Guide](docs/DATASET_PIPELINE.md) for detailed instructions
 
 ## 🛠️ Environment Setup
 
@@ -90,6 +125,25 @@ We prioritize consistent, reproducible results through multiple mechanisms:
   - Full pipeline parameters recorded
 
 ## 💻 CLI Reference
+
+### Dataset Pipeline Commands
+
+```bash
+# List available datasets
+python -m mmx_news.cli dataset list-datasets
+
+# Download datasets (with API keys)
+python -m mmx_news.cli dataset download isot --kaggle-key "username:key"
+python -m mmx_news.cli dataset download-multiple --datasets all --kaggle-key "username:key"
+
+# Process custom dataset
+python -m mmx_news.cli dataset process-custom \
+    --url "https://example.com/dataset.csv" \
+    --label-col "label" --text-cols "content"
+
+# Integrate datasets
+python -m mmx_news.cli dataset integrate --prepare
+```
 
 ### Core Pipeline Commands
 

@@ -30,6 +30,8 @@ dependencies = [
     "pydantic",
     "kaggle",
     "spacy==3.7.0",
+    "requests",
+    "datasets",  # For Hugging Face datasets
 ]
 
 [project.optional-dependencies]
