@@ -1,0 +1,162 @@
+# Dataset Pipeline Configuration
+# ================================
+# This file defines available fake news datasets and their configurations
+
+datasets:
+  # Existing datasets in the project
+  isot:
+    name: "ISOT Fake News Dataset"
+    source: kaggle
+    identifier: "csmalarkodi/isot-fake-news-dataset"
+    expected_files: ["Fake.csv", "True.csv"]
+    format: csv
+    label_column: label
+    text_columns: [text]
+    title_column: title
+    description: "Primary dataset with 44,898 articles"
+    
+  liar:
+    name: "LIAR Dataset"
+    source: kaggle
+    identifier: "doanquanvietnamca/liar-dataset"
+    expected_files: ["train.tsv", "test.tsv", "valid.tsv"]
+    format: tsv
+    label_column: label
+    text_columns: [statement]
+    title_column: null
+    description: "12.8K labeled short statements from PolitiFact"
+
+  # Additional popular fake news datasets
+  fakenewsnet:
+    name: "FakeNewsNet"
+    source: github
+    identifier: "https://github.com/KaiDMML/FakeNewsNet"
+    expected_files: ["politifact_fake.csv", "politifact_real.csv", "gossipcop_fake.csv", "gossipcop_real.csv"]
+    format: csv
+    label_column: label
+    text_columns: [text]
+    title_column: title
+    description: "Multi-domain dataset with social context"
+
+  covid19_fake:
+    name: "COVID-19 Fake News"
+    source: kaggle
+    identifier: "arashnic/covid19-fake-news"
+    expected_files: ["*.csv"]
+    format: csv
+    label_column: label
+    text_columns: [text, title]
+    title_column: title
+    description: "COVID-19 related misinformation dataset"
+
+  fake_news_corpus:
+    name: "Fake News Corpus"
+    source: kaggle
+    identifier: "snapcrack/all-the-news"
+    expected_files: ["*.csv"]
+    format: csv
+    label_column: label
+    text_columns: [content]
+    title_column: title
+    description: "Large corpus of news articles"
+
+  buzzfeed_news:
+    name: "BuzzFeed News Dataset"
+    source: github
+    identifier: "https://github.com/BuzzFeedNews/fake-news-dataset"
+    expected_files: ["*.csv"]
+    format: csv
+    label_column: rating
+    text_columns: [text]
+    title_column: title
+    description: "Facebook news dataset analyzed by BuzzFeed"
+
+  # Mendeley Data sources
+  mendeley_fake_news:
+    name: "Mendeley Fake News Dataset"
+    source: mendeley
+    identifier: "10.17632/29ktd3xrpx.1"  # Example DOI
+    expected_files: ["*.csv"]
+    format: csv
+    label_column: label
+    text_columns: [text]
+    title_column: title
+    description: "Curated fake news dataset from Mendeley"
+
+  # Hugging Face datasets
+  fever:
+    name: "FEVER Fact Verification"
+    source: huggingface
+    identifier: "fever"
+    expected_files: ["*.csv"]
+    format: csv
+    label_column: label
+    text_columns: [claim]
+    title_column: null
+    description: "Fact extraction and verification dataset"
+
+  multi_fc:
+    name: "Multi-FC"
+    source: huggingface
+    identifier: "multi_fc"
+    expected_files: ["*.csv"]
+    format: csv
+    label_column: label
+    text_columns: [text]
+    title_column: null
+    description: "Multi-domain fact-checking dataset"
+
+# Processing configurations
+processing:
+  # Default preprocessing steps
+  default:
+    remove_duplicates: true
+    remove_missing: true
+    min_text_length: 50
+    max_text_length: 50000
+    
+  # Dataset-specific preprocessing
+  isot:
+    remove_duplicates: true
+    min_text_length: 100
+    
+  liar:
+    remove_duplicates: true
+    min_text_length: 10  # Short statements
+    
+  covid19_fake:
+    remove_duplicates: true
+    filter_language: en
+    min_text_length: 50
+
+# API configuration templates
+api_keys:
+  kaggle:
+    env_var: "KAGGLE_API_KEY"
+    format: "username:key"
+    required_for: ["isot", "liar", "covid19_fake", "fake_news_corpus"]
+    
+  mendeley:
+    env_var: "MENDELEY_API_KEY"
+    format: "api_key"
+    required_for: ["mendeley_fake_news"]
+    
+  huggingface:
+    env_var: "HF_TOKEN"
+    format: "token"
+    required_for: []  # Public datasets don't require token
+
+# Pipeline settings
+pipeline:
+  cache_dir: "data/cache"
+  processed_dir: "data/processed/datasets"
+  
+  # Batch processing
+  batch_size: 1000
+  n_workers: 4
+  
+  # Data validation
+  validation:
+    check_text_quality: true
+    check_label_consistency: true
+    min_samples_per_class: 100

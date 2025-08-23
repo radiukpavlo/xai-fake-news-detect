@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 
 from .evaluation.validate import evaluate_checkpoint
 from .experiments.ablations import run_ablations
@@ -8,13 +9,11 @@ from .experiments.baselines import run_baselines
 from .training.train import run_training
 from .data.loaders import prepare_splits
 from .training.utils import load_config
-
-
-from .data.loaders import prepare_splits
+from .cli_dataset import build_parser as build_dataset_parser
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="mmx_news", description="LLM mental-model proxy")
+    parser = argparse.ArgumentParser(prog="mmx_news", description="LLM mental-model proxy with enhanced dataset pipeline")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_prep = sub.add_parser("prepare-data", help="Prepare dataset and splits")
@@ -37,6 +36,10 @@ def _build_parser() -> argparse.ArgumentParser:
 
     p_base = sub.add_parser("baselines", help="Run baseline classifiers")
     p_base.add_argument("--config", required=True)
+    
+    # Dataset pipeline commands
+    p_dataset = sub.add_parser("dataset", help="Dataset pipeline management")
+    p_dataset.add_argument("dataset_cmd", nargs="*", help="Dataset subcommand and arguments")
 
     return parser
 
@@ -56,6 +59,15 @@ def main() -> None:
         run_ablations(args.config, args.grid)
     elif args.cmd == "baselines":
         run_baselines(args.config)
+    elif args.cmd == "dataset":
+        # Delegate to dataset CLI
+        dataset_parser = build_dataset_parser()
+        dataset_args = dataset_parser.parse_args(args.dataset_cmd)
+        if hasattr(dataset_args, 'func'):
+            return dataset_args.func(dataset_args)
+        else:
+            dataset_parser.print_help()
+            return 1
 
 
 if __name__ == "__main__":
